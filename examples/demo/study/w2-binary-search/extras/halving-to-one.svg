@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="380" viewBox="0 0 760 380">
+  <rect x="0" y="0" width="760" height="380" fill="#fafafa"/>
+  <text x="32" y="44" font-family="sans-serif" font-size="22" font-weight="bold" fill="#1a1a1a" text-anchor="start">Each look throws away half: 16 items need 4 halvings</text>
+  <text x="32" y="72" font-family="sans-serif" font-size="15" fill="#555555" text-anchor="start">Bar length = how many items could still hold the target</text>
+
+  <text x="32" y="122" font-family="sans-serif" font-size="15" fill="#333333" text-anchor="start">start</text>
+  <rect x="110" y="104" width="512" height="26" fill="#cfe3f7" stroke="#2f6db3" stroke-width="2"/>
+  <text x="640" y="122" font-family="sans-serif" font-size="16" fill="#1a1a1a" text-anchor="start">16</text>
+
+  <text x="32" y="172" font-family="sans-serif" font-size="15" fill="#333333" text-anchor="start">look 1</text>
+  <rect x="110" y="154" width="256" height="26" fill="#cfe3f7" stroke="#2f6db3" stroke-width="2"/>
+  <text x="640" y="172" font-family="sans-serif" font-size="16" fill="#1a1a1a" text-anchor="start">8</text>
+
+  <text x="32" y="222" font-family="sans-serif" font-size="15" fill="#333333" text-anchor="start">look 2</text>
+  <rect x="110" y="204" width="128" height="26" fill="#cfe3f7" stroke="#2f6db3" stroke-width="2"/>
+  <text x="640" y="222" font-family="sans-serif" font-size="16" fill="#1a1a1a" text-anchor="start">4</text>
+
+  <text x="32" y="272" font-family="sans-serif" font-size="15" fill="#333333" text-anchor="start">look 3</text>
+  <rect x="110" y="254" width="64" height="26" fill="#cfe3f7" stroke="#2f6db3" stroke-width="2"/>
+  <text x="640" y="272" font-family="sans-serif" font-size="16" fill="#1a1a1a" text-anchor="start">2</text>
+
+  <text x="32" y="322" font-family="sans-serif" font-size="15" fill="#333333" text-anchor="start">look 4</text>
+  <rect x="110" y="304" width="32" height="26" fill="#f6d6a8" stroke="#b36b00" stroke-width="2"/>
+  <text x="640" y="322" font-family="sans-serif" font-size="16" fill="#1a1a1a" text-anchor="start">1</text>
+  <text x="156" y="322" font-family="sans-serif" font-size="15" fill="#b36b00" text-anchor="start">one candidate left: found, or not there</text>
+
+  <text x="32" y="362" font-family="sans-serif" font-size="15" fill="#333333" text-anchor="start">2 x 2 x 2 x 2 = 16, so the number of halvings is log2 16 = 4. For a million: log2 1,000,000 = about 20.</text>
+</svg>

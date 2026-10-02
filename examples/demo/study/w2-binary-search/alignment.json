@@ -1,0 +1,52 @@
+{
+  "method": "agent-semantic",
+  "parts": [
+    {"name": "Why sorted order helps", "slides": [1, 2]},
+    {"name": "How binary search works", "slides": [3, 4, 5, 6]},
+    {"name": "Admin", "slides": [7]},
+    {"name": "Wrap-up", "slides": [8]}
+  ],
+  "assignments": [
+    {
+      "slide": 1,
+      "segment_ids": [0],
+      "notes": "Today is binary search. You have probably seen it before, but we are going to do it properly."
+    },
+    {
+      "slide": 2,
+      "segment_ids": [1, 2],
+      "notes": "If a list is not sorted, you have no choice: you check every element, up to **n** checks.\n\nIf it is sorted, the order itself tells you where the target **cannot** be, so you get to skip most of the list."
+    },
+    {
+      "slide": 3,
+      "segment_ids": [3, 4],
+      "notes": "The idea is simple. Look at the middle element:\n\n- **Too small**: everything to its left is too small as well. Throw that half away.\n- **Too big**: throw away the right half.\n\nThen do the same thing on whatever is left."
+    },
+    {
+      "slide": 4,
+      "segment_ids": [5, 6],
+      "notes": "Let's find 23.\n\n1. The middle is 16: too small, so go right.\n2. Now the middle is 56: too big, so go left.\n3. The middle of what is left is 23. Found.\n\nThree looks instead of the six a linear scan would need."
+    },
+    {
+      "slide": 5,
+      "segment_ids": [7, 8],
+      "notes": "Why `log n`? Every step **halves** what is left: n, then n/2, then n/4, until one element remains.\n\nHow many halvings take you from a million down to one? About **20**. Twenty looks for a million items: that is the whole point."
+    },
+    {
+      "slide": 6,
+      "segment_ids": [9, 10],
+      "notes": "This is where everyone gets it wrong.\n\n- The loop condition is `lo <= hi`, not `lo < hi`, or you miss the last element.\n- Write the midpoint as `mid = lo + (hi - lo) // 2`. In some languages `lo + hi` can overflow, and that bug sat in real libraries for years."
+    },
+    {
+      "slide": 7,
+      "segment_ids": [11],
+      "notice": "deadline",
+      "notes": "Before I forget, Assignment 1:\n\n- Due **Friday of week 4, 5 pm**.\n- Worth **15%**.\n- Submit it on the **course website**, not by email."
+    },
+    {
+      "slide": 8,
+      "segment_ids": [],
+      "notes": "> **No recording** (the recording ended earlier).\n>\n> Two things to take away. Sorted input plus halving the range each step gives you `O(log n)`. And most binary search bugs are in the loop bounds, so get `lo <= hi` and the midpoint right."
+    }
+  ]
+}

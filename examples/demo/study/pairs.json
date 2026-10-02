@@ -1,0 +1,11 @@
+{
+  "method": "agent-semantic",
+  "pairs": [
+    {
+      "key": "w2-binary-search",
+      "slides": "slides/binary-search.pdf",
+      "transcript": "transcripts/binary-search-recording.vtt",
+      "why": "Title slide is Week 2 Lecture 1, Binary Search; the recording opens with 'today is binary search'."
+    }
+  ]
+}

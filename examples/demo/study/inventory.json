@@ -1,0 +1,21 @@
+{
+  "slides": [
+    {
+      "path": "slides/binary-search.pdf",
+      "name": "binary-search.pdf",
+      "bytes": 6451,
+      "pages": 8,
+      "paired_as": null,
+      "preview": "Binary Search Week 2, Lecture 1 A demo lecture for transcript-per-slide 1 / 8 Searching a sorted list - Linear search: up to n checks - Sorted order lets us skip most of them 2 / 8"
+    }
+  ],
+  "transcripts": [
+    {
+      "path": "transcripts/binary-search-recording.vtt",
+      "name": "binary-search-recording.vtt",
+      "bytes": 1915,
+      "paired_as": null,
+      "preview": "OK, um, so today is binary search, which you've probably, uh, seen before, but we're going to do it properly. So if a list isn't sorted, you've got no choice, you check every element. That's up to n checks. But if it is sorted, you know, the order itself tells you where things can't be. So you get to skip most of them. The idea is dead simple. Look at the middle. If it's too small, everything to the left is too small as well, throw it away. If it's too big, throw away the right half. Then just do the same thing on whatever's left. Let's find twenty three. Middle is sixteen, too small, so we go right. Now the middle is fifty six, too big, go left. And the middle of what's left is twenty three. Found it in three looks instead of six. Why is it log n? Every step halves what's left. n, then n over two, n over four, until there's one thing left. How many halvings to get from a million to one? About twenty. Twenty looks for a million items. That's the whole point. Now, this is where everyone gets it wrong. It's lo less than or equal to hi, not less than, or you miss the last element. And write mid as lo plus hi minus lo over two. In some languages lo plus hi can overflow, and that bug sa"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+# transcript-per-slide config. Lives in your course folder.
+# Every key is optional; delete what you do not need.
+
+[paths]
+slides = ["slides"]            # folders searched (recursively) for slide PDFs
+transcripts = ["transcripts"]  # folders searched for .txt / .vtt / .srt
+output = "study"               # one folder per lecture: pages/, extracted.json, alignment.json, pack.md
+
+[slides]
+# Regexes removed from slide text before titles are picked: footers, page
+# counters, course codes. Case-insensitive, multiline.
+footer_patterns = [
+  # '^\s*\d+\s*/\s*\d+\s*$',            # "12 / 40" page counters
+  # 'ABCD1234|Semester\s*\d,?\s*\d{4}',  # your course code and term
+]
+zoom = 1.8      # PNG resolution (1.8 is about 1300 px wide for a 16:9 deck)
+border = true   # draw a thin frame so white slides stand out
+
+[transcript]
+# Speakers to drop entirely, e.g. Echo360 puts its copyright notice under "SPEAKER 0".
+skip_speakers = []
+min_segment_chars = 120   # segments are cut at sentence ends once this long
+pause_split_seconds = 4   # .vtt/.srt only: also cut at silences this long (0 = off)
+
+# Words your captioning keeps getting wrong. Whole-word, case-insensitive.
+[transcript.asr_fixes]
+# cash = "cache"
+# "eye tunes" = "iTunes"

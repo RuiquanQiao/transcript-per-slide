@@ -1,0 +1,37 @@
+WEBVTT
+
+00:00:02.000 --> 00:00:08.000
+<v Lecturer>OK, um, so today is binary search, which you've probably, uh, seen before, but we're going to do it properly.
+
+00:00:14.000 --> 00:00:21.000
+<v Lecturer>So if a list isn't sorted, you've got no choice, you check every element. That's up to n checks.
+
+00:00:21.000 --> 00:00:27.000
+<v Lecturer>But if it is sorted, you know, the order itself tells you where things can't be. So you get to skip most of them.
+
+00:00:33.000 --> 00:00:40.000
+<v Lecturer>The idea is dead simple. Look at the middle. If it's too small, everything to the left is too small as well, throw it away.
+
+00:00:40.000 --> 00:00:46.000
+<v Lecturer>If it's too big, throw away the right half. Then just do the same thing on whatever's left.
+
+00:00:52.000 --> 00:01:00.000
+<v Lecturer>Let's find twenty three. Middle is sixteen, too small, so we go right. Now the middle is fifty six, too big, go left.
+
+00:01:00.000 --> 00:01:05.000
+<v Lecturer>And the middle of what's left is twenty three. Found it in three looks instead of six.
+
+00:01:12.000 --> 00:01:20.000
+<v Lecturer>Why is it log n? Every step halves what's left. n, then n over two, n over four, until there's one thing left.
+
+00:01:20.000 --> 00:01:27.000
+<v Lecturer>How many halvings to get from a million to one? About twenty. Twenty looks for a million items. That's the whole point.
+
+00:01:34.000 --> 00:01:42.000
+<v Lecturer>Now, this is where everyone gets it wrong. It's lo less than or equal to hi, not less than, or you miss the last element.
+
+00:01:42.000 --> 00:01:50.000
+<v Lecturer>And write mid as lo plus hi minus lo over two. In some languages lo plus hi can overflow, and that bug sat in real libraries for years.
+
+00:01:56.000 --> 00:02:05.000
+<v Lecturer>Oh, before I forget, assignment one. It's due Friday of week four at five pm, it's worth fifteen percent, and you submit it on the course website, not by email.

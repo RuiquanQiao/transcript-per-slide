@@ -1,0 +1,129 @@
+{
+  "key": "w2-binary-search",
+  "slides_pdf": "slides/binary-search.pdf",
+  "transcript": "transcripts/binary-search-recording.vtt",
+  "slides": [
+    {
+      "index": 1,
+      "title": "Binary Search",
+      "text": "Binary Search Week 2, Lecture 1 A demo lecture for transcript-per-slide",
+      "image": "001.png"
+    },
+    {
+      "index": 2,
+      "title": "Searching a sorted list",
+      "text": "Searching a sorted list - Linear search: up to n checks - Sorted order lets us skip most of them",
+      "image": "002.png"
+    },
+    {
+      "index": 3,
+      "title": "The idea",
+      "text": "The idea - Look at the middle element - Too small? Discard the left half - Too big? Discard the right half - Repeat on what is left",
+      "image": "003.png"
+    },
+    {
+      "index": 4,
+      "title": "Example: find 23",
+      "text": "Example: find 23 [ 2 5 8 12 16 23 38 56 72 91 ] mid = 16 -> go right mid = 56 -> go left mid = 23 -> found",
+      "image": "004.png"
+    },
+    {
+      "index": 5,
+      "title": "Why about log2 n steps",
+      "text": "Why about log2 n steps n -> n/2 -> n/4 -> ... -> 1 1,000,000 items: about 20 steps",
+      "image": "005.png"
+    },
+    {
+      "index": 6,
+      "title": "Off-by-one traps",
+      "text": "Off-by-one traps while lo <= hi: mid = lo + (hi - lo) // 2",
+      "image": "006.png"
+    },
+    {
+      "index": 7,
+      "title": "Assignment 1",
+      "text": "Assignment 1 - Due Friday week 4, 5pm - Worth 15% - Submit on the course website",
+      "image": "007.png"
+    },
+    {
+      "index": 8,
+      "title": "Summary",
+      "text": "Summary - Sorted input + halving = O(log n) - Get the loop bounds right",
+      "image": "008.png"
+    }
+  ],
+  "segments": [
+    {
+      "id": 0,
+      "raw_text": "OK, um, so today is binary search, which you've probably, uh, seen before, but we're going to do it properly.",
+      "speaker": "Lecturer",
+      "start": "00:00:02"
+    },
+    {
+      "id": 1,
+      "raw_text": "So if a list isn't sorted, you've got no choice, you check every element. That's up to n checks. But if it is sorted, you know, the order itself tells you where things can't be.",
+      "speaker": "Lecturer",
+      "start": "00:00:14"
+    },
+    {
+      "id": 2,
+      "raw_text": "So you get to skip most of them.",
+      "speaker": "Lecturer",
+      "start": "00:00:21"
+    },
+    {
+      "id": 3,
+      "raw_text": "The idea is dead simple. Look at the middle. If it's too small, everything to the left is too small as well, throw it away.",
+      "speaker": "Lecturer",
+      "start": "00:00:33"
+    },
+    {
+      "id": 4,
+      "raw_text": "If it's too big, throw away the right half. Then just do the same thing on whatever's left.",
+      "speaker": "Lecturer",
+      "start": "00:00:40"
+    },
+    {
+      "id": 5,
+      "raw_text": "Let's find twenty three. Middle is sixteen, too small, so we go right. Now the middle is fifty six, too big, go left. And the middle of what's left is twenty three.",
+      "speaker": "Lecturer",
+      "start": "00:00:52"
+    },
+    {
+      "id": 6,
+      "raw_text": "Found it in three looks instead of six.",
+      "speaker": "Lecturer",
+      "start": "00:01:00"
+    },
+    {
+      "id": 7,
+      "raw_text": "Why is it log n? Every step halves what's left. n, then n over two, n over four, until there's one thing left. How many halvings to get from a million to one?",
+      "speaker": "Lecturer",
+      "start": "00:01:12"
+    },
+    {
+      "id": 8,
+      "raw_text": "About twenty. Twenty looks for a million items. That's the whole point.",
+      "speaker": "Lecturer",
+      "start": "00:01:20"
+    },
+    {
+      "id": 9,
+      "raw_text": "Now, this is where everyone gets it wrong. It's lo less than or equal to hi, not less than, or you miss the last element.",
+      "speaker": "Lecturer",
+      "start": "00:01:34"
+    },
+    {
+      "id": 10,
+      "raw_text": "And write mid as lo plus hi minus lo over two. In some languages lo plus hi can overflow, and that bug sat in real libraries for years.",
+      "speaker": "Lecturer",
+      "start": "00:01:42"
+    },
+    {
+      "id": 11,
+      "raw_text": "Oh, before I forget, assignment one. It's due Friday of week four at five pm, it's worth fifteen percent, and you submit it on the course website, not by email.",
+      "speaker": "Lecturer",
+      "start": "00:01:56"
+    }
+  ]
+}

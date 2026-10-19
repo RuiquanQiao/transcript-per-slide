@@ -49,6 +49,10 @@ into `asr_fixes` in the config if the same error keeps coming back.
   - `notes`: polished Markdown under the slide, in the lecturer's voice. See
     [notes-voice.md](notes-voice.md). Required whenever `segment_ids` is
     non-empty.
+  - `title` (optional): the slide's heading in the pack, replacing
+    `slides[].title`. Use it when extraction got the title wrong: scanned or
+    image-only decks ("(no extractable title)"), a footer or course code picked
+    as the title. Read it off the slide image.
   - `notice` (optional): set it when what was said on this slide affects **the
     student's own marks, standing or obligations**, not the subject matter.
     Judge by the effect on the student, not by keywords: would missing this

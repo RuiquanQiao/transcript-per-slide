@@ -16,10 +16,10 @@ def main() -> int:
     print(f"root:   {proj.root}")
     print(f"config: {proj.rel(proj.config_path) if proj.config_path.exists() else '(none, using defaults)'}")
     pairs = proj.pairs()
-    paired_files = {proj.rel(proj.path(p[f])) for p in pairs for f in ("slides", "transcript") if p.get(f)}
-    loose = [proj.rel(p) for p in c.find_files(proj.slide_dirs, {".pdf"})
-             + c.find_files(proj.transcript_dirs, c.TRANSCRIPT_SUFFIXES)
-             if proj.rel(p) not in paired_files]
+    paired_files = proj.paired_files()
+    slides, transcripts, others = proj.inputs()
+    loose = [proj.rel(p) for p in slides + transcripts if proj.rel(p) not in paired_files]
+    unusable = [f"{proj.rel(p)} ({k})" for p, k in others if proj.rel(p) not in paired_files]
     if not pairs:
         print("no pairs yet")
     for p in pairs:
@@ -43,8 +43,12 @@ def main() -> int:
         print("not paired yet:")
         for f in loose:
             print(f"  {f}")
+    if unusable:
+        print("cannot be used as they are (inventory.py says what to do, or add to [paths] ignore):")
+        for f in unusable:
+            print(f"  {f}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(c.run(main))

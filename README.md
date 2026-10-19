@@ -63,6 +63,13 @@ my-course/
   transcripts/   .txt (Echo360 "SPEAKER N" or plain), .vtt, .srt, or Whisper .json
 ```
 
+Those folder names are only a suggestion. If your slides are in `ppt/` or
+`Week 3/`, or everything sits loose in the course folder, the agent looks
+through the folder, works out from the files' contents which ones are slides
+and which are transcripts, and records that in the config. If something is
+missing (no transcripts, or `.pptx` that needs exporting to PDF, or only a
+video), it tells you what to add before packing.
+
 Then, in that folder, run `/tps`. On the first run it sets things up; after
 that, it packs every lecture that is new.
 
@@ -92,6 +99,8 @@ understanding; the scripts in `scripts/` do everything that doesn't.**
 
 | Step | Who | Why |
 |---|---|---|
+| Find every folder holding slides, transcripts, decks or recordings | `locate.py` | mechanical |
+| Decide which folders are slides and which are transcripts | **agent**, from the files' content | folder names lie too (`ppt/`, `Week 3/`, everything in one place) |
 | List PDFs and transcripts with previews | `inventory.py` | mechanical |
 | Decide which recording belongs to which deck | **agent**, by reading title slides and opening lines | filenames lie (`lec1.1` vs `Lecture 1-1` vs `Echo360_0812`) |
 | Render slide PNGs, cut the transcript into numbered segments | `extract.py` | mechanical; caption files are also cut at pauses, where slide changes usually happen |
@@ -103,6 +112,24 @@ understanding; the scripts in `scripts/` do everything that doesn't.**
 
 Lectures that already have a pack are never touched again unless you ask
 for a redo, so a new week's files don't disturb old notes.
+
+Which deck goes with which recording is kept in `study/pairs.json`, along with
+a fingerprint of each file's content. **Rename or move your files whenever you
+like.** The next `/tps` finds them by content and updates the record, and the
+lecture keeps its pack and your notes. If the lecturer replaces a deck or
+recording, `/tps` notices and asks whether to redo that pack.
+
+**When the scripts can't cope, the agent takes over.** Real course folders
+are messy: `.pptx` instead of PDF, Teams transcripts as `.docx`, a `.txt`
+full of timestamps, a PDF saved without `.pdf`, a login page saved as
+`slides.pdf`, a GBK-encoded file, a scanned deck. The scripts read files by
+what's inside rather than what they're called, and anything they can't handle
+they don't crash on or skip. They print a `NEEDS AGENT [code]` block and exit
+with status 3. The skill tells the agent to act on it straight away, following
+[references/handoffs.md](references/handoffs.md): fix the config, write a
+readable copy into `study/_converted/` (your own files are never touched),
+read titles off a scanned deck, or ask you for exactly the one thing it
+can't do itself.
 
 Every script also works on its own; run any of them with `--help`. Also there:
 `init.py` (config + a README for the study folder) and `status.py`.
@@ -118,7 +145,8 @@ Highlights:
 - `transcript.asr_fixes`: words your captioning keeps getting wrong
   (`cash` → `cache`)
 - `transcript.skip_speakers`: e.g. the speaker that carries a copyright notice
-- `paths.*`: where slides, transcripts and packs live
+- `paths.*`: where slides, transcripts and packs live (the agent fills these
+  in on the first run if your folders aren't `slides/` and `transcripts/`)
 
 ## A note on course material
 

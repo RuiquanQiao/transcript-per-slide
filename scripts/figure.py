@@ -22,7 +22,6 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -115,7 +114,8 @@ def main() -> int:
 
     browser = find_browser() if args.engine != "mupdf" else None
     if args.engine == "browser" and not browser:
-        sys.exit("No Chrome/Edge/Chromium found (set TPS_BROWSER to its path), or use --engine mupdf.")
+        raise c.NeedsAgent("figure-render", "browser", "no Chrome/Edge/Chromium found",
+                           "Set TPS_BROWSER to its path, or use --engine mupdf.")
     if args.engine == "auto" and not browser:
         print("note: no Chrome/Edge/Chromium found; using PyMuPDF, which can differ from what "
               "Markdown viewers show (inherited text-anchor, fonts).")
@@ -138,14 +138,18 @@ def main() -> int:
                 render_mupdf(src, png, args.scale)
                 engine = "mupdf"
         except Exception as e:  # report and keep going with the other figures
-            print(f"{src}: could not render ({e})")
-            status = 1
+            c.handoff("figure-render", src, f"could not render it ({e})",
+                      "Try --engine mupdf (or the browser one); if both fail, the figure is probably "
+                      "broken: open it as text and fix it, or redraw it simpler (handoffs.md#figure-render).")
             continue
-        warn = "  WARNING: looks blank" if looks_blank(png) else ""
-        print(f"{src} -> {png} [{engine}]{warn}")
+        print(f"{src} -> {png} [{engine}]")
+        if looks_blank(png):
+            c.handoff("figure-render", src, f"the {engine} render looks blank",
+                      "Open the PNG. If it is really empty, the SVG has a size/viewBox or colour problem: "
+                      "fix and re-run (handoffs.md#figure-render).")
     print("Open each PNG and look at it. When done: python figure.py --clean <extras dir>")
     return status
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(c.run(main))

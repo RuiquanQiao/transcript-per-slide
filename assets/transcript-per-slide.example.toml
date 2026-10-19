@@ -2,9 +2,14 @@
 # Every key is optional; delete what you do not need.
 
 [paths]
+# Any folder names work: ["ppt"], ["Week 1", "Week 2"], or ["."] for files
+# loose in the course folder. Hidden folders and the output folder are skipped.
 slides = ["slides"]            # folders searched (recursively) for slide PDFs
-transcripts = ["transcripts"]  # folders searched for .txt / .vtt / .srt
+transcripts = ["transcripts"]  # folders searched for .txt / .vtt / .srt / Whisper .json
 output = "study"               # one folder per lecture: pages/, extracted.json, alignment.json, pack.md
+# Files in those folders that are not lecture material (the agent adds them once
+# it has looked), so they are not raised again. Globs from the course folder.
+ignore = []                    # e.g. ["ppt/old/*", "*.png", "transcripts/README.md"]
 
 [slides]
 # Regexes removed from slide text before titles are picked: footers, page

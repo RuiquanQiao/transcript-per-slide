@@ -5,7 +5,17 @@
       "key": "w2-binary-search",
       "slides": "slides/binary-search.pdf",
       "transcript": "transcripts/binary-search-recording.vtt",
-      "why": "Title slide is Week 2 Lecture 1, Binary Search; the recording opens with 'today is binary search'."
+      "why": "Title slide is Week 2 Lecture 1, Binary Search; the recording opens with 'today is binary search'.",
+      "fingerprints": {
+        "slides": {
+          "sha256": "23b5a8eaf7ae498b10ebc688cdca371d692ee942aa76e007793e25ee0d2bf4d4",
+          "bytes": 6451
+        },
+        "transcript": {
+          "sha256": "57a6347f4d34f9317b5bf191f8bdf80b7cb80e3c2375cbdb26fab7bfd7104517",
+          "bytes": 1915
+        }
+      }
     }
   ]
 }

@@ -40,8 +40,11 @@ def render_one(proj: c.Project, key: str, discard_edits: bool = False) -> bool:
     notes_of: dict[int, str] = {}
     has_speech: dict[int, bool] = {}
     notice_of: dict[int, str] = {}
+    title_of = {s["index"]: s["title"] for s in ex["slides"]}
     for item in al["assignments"]:
         idx = int(item["slide"])
+        if title := (item.get("title") or "").strip():  # agent's fix for scanned decks / bad extraction
+            title_of[idx] = title
         if notes := (item.get("notes") or "").strip():
             notes_of[idx] = notes
         has_speech[idx] = bool(item.get("segment_ids"))
@@ -49,12 +52,16 @@ def render_one(proj: c.Project, key: str, discard_edits: bool = False) -> bool:
             notice_of[idx] = str(item["notice"])
     part_of = {int(i): p["name"] for p in al.get("parts", []) for i in p["slides"]}
 
+    def source(field: str, fallback: str) -> str:
+        used, orig = ex.get(field), ex.get(f"{field.split('_')[0]}_from")
+        return f"`{orig}` (converted: `{used}`)" if orig else f"`{used or fallback}`"
+
     lines = [f"# {key}", "",
-             f"Slides: `{ex.get('slides_pdf', '')}`  ",
-             f"Transcript: `{ex.get('transcript') or '(none yet)'}`", ""]
+             f"Slides: {source('slides_pdf', '')}  ",
+             f"Transcript: {source('transcript', '(none yet)')}", ""]
     if notice_of:
         lines += ["**★ Notices (marks, exams, deadlines, assignments, access)**", ""]
-        lines += [f"- ★ [{notice_of[s['index']]}] {s['index']}. {s['title']}"
+        lines += [f"- ★ [{notice_of[s['index']]}] {s['index']}. {title_of[s['index']]}"
                   for s in ex["slides"] if s["index"] in notice_of]
         lines.append("")
 
@@ -68,7 +75,7 @@ def render_one(proj: c.Project, key: str, discard_edits: bool = False) -> bool:
             lines += [f"## {part}", ""]
             current = part
         star = f"★ [{notice_of[idx]}] " if idx in notice_of else ""
-        lines += [f"### {star}{idx}. {s['title']}", "", f"![Slide {idx}](pages/{s['image']})", ""]
+        lines += [f"### {star}{idx}. {title_of[idx]}", "", f"![Slide {idx}](pages/{s['image']})", ""]
         if idx in notes_of:
             lines += [notes_of[idx], ""]
         elif ex.get("transcript"):
@@ -91,16 +98,15 @@ def render_one(proj: c.Project, key: str, discard_edits: bool = False) -> bool:
     if pack.exists() and not discard_edits:
         lost = would_lose(pack.read_text(encoding="utf-8", errors="replace"), new)
         if lost:
-            print(f"{key}: NOT rendered: pack.md has {len(lost)} line(s) outside the tutoring "
-                  "blocks that are not in alignment.json and would be lost:")
-            for ln in lost[:15]:
-                print(f"    {ln[:110]}")
-            if len(lost) > 15:
-                print(f"    ... and {len(lost) - 15} more")
-            print("  Move them into alignment.json notes or a <!-- note:N --> block, "
-                  "or pass --discard-edits.")
+            c.handoff("hand-edits", pack,
+                      f"{key}: NOT rendered; {len(lost)} line(s) outside the tutoring blocks are not in "
+                      "alignment.json and would be lost:",
+                      "Move them into alignment.json notes or a <!-- note:N --> block, then render "
+                      "again. Use --discard-edits only if the student says to drop them.",
+                      details=[ln[:110] for ln in lost[:15]]
+                      + ([f"... and {len(lost) - 15} more"] if len(lost) > 15 else []))
             return False
-    pack.write_text(new, encoding="utf-8")
+    pack.write_text(new, encoding="utf-8", newline="\n")
     print(f"{key}: rendered {proj.rel(pack)}")
     return True
 
@@ -144,4 +150,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(c.run(main))

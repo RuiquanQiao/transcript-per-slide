@@ -12,7 +12,6 @@ The agent writes <output>/pairs.json after reading inventory.json. Then:
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 import common as c
@@ -39,13 +38,14 @@ def slide_title(cleaned: str) -> str:
 def extract_slides(proj: c.Project, pdf: Path, pages_dir: Path) -> list[dict]:
     fitz = c.fitz()
     opts = proj.cfg["slides"]
+    doc = c.open_pdf(pdf)  # before touching pages/: a deck that will not open changes nothing
     pages_dir.mkdir(parents=True, exist_ok=True)
     for old in pages_dir.iterdir():  # only our own NNN.png; anything else is left alone
         if PAGE_PNG.match(old.name):
             old.unlink()
     zoom = float(opts["zoom"])
     slides = []
-    with fitz.open(pdf) as doc:
+    with doc:
         for i, page in enumerate(doc, start=1):
             raw = page.get_text("text") or ""
             if opts["border"]:
@@ -105,21 +105,41 @@ def segment(proj: c.Project, units: list[dict]) -> list[dict]:
     return segments
 
 
-def extract_one(proj: c.Project, key: str, slides_pdf: Path, transcript: Path | None) -> Path:
+def extract_one(proj: c.Project, key: str, slides_pdf: Path, transcript: Path | None,
+                origins: dict | None = None) -> Path:
     folder = proj.out / key
+    for p in (slides_pdf, transcript):
+        if p and not p.exists():
+            raise c.NeedsAgent("pair-missing-file", p, f"{key}: this file is not there",
+                               "It was moved or renamed: find it (locate.py) and fix the path in "
+                               "pairs.json (handoffs.md#pair-missing-file).")
     slides = extract_slides(proj, slides_pdf, folder / "pages")
     segments = []
     if transcript:
-        if not transcript.exists():
-            sys.exit(f"{key}: transcript not found: {transcript}")
         segments = segment(proj, c.transcript_units(proj, transcript))
         if not segments:
-            print(f"{key}: warning: no text could be read from {proj.rel(transcript)}")
+            c.handoff("transcript-empty", transcript, f"{key}: no text could be read from it",
+                      "Open it: re-download if empty, convert if the text is there in a layout the "
+                      "scripts miss (handoffs.md#transcript-empty). The slides were extracted.")
+        elif len(segments) <= 2 and len(slides) > 5:
+            c.handoff("transcript-unsplit", transcript,
+                      f"{key}: the whole recording came out as {len(segments)} segment(s), too coarse to "
+                      "place on slides (no punctuation, line breaks or timings to cut at)",
+                      "Lower min_segment_chars in the config and re-extract, or write a converted copy "
+                      "with paragraph breaks (handoffs.md#transcript-unsplit).")
+    untitled = sum(1 for s in slides if s["title"] == "(no extractable title)")
+    if slides and untitled > len(slides) // 2:
+        c.handoff("pdf-no-text", slides_pdf,
+                  f"{key}: {untitled} of {len(slides)} slides have no text (scanned or image-only)",
+                  "Read the slides from pages/NNN.png, and give each slide a `title` in alignment.json "
+                  "(handoffs.md#pdf-no-text).")
     out = folder / "extracted.json"
     c.write_json(out, {
         "key": key,
         "slides_pdf": proj.rel(slides_pdf),
         "transcript": proj.rel(transcript) if transcript else None,
+        # Originals of agent-converted copies, shown in the pack header.
+        **{k: v for k, v in (origins or {}).items() if v},
         "slides": slides,
         "segments": segments,
     })
@@ -141,28 +161,31 @@ def main() -> int:
     if args.from_pairs:
         pairs = proj.pairs()
         if not pairs:
-            sys.exit(f"No {proj.rel(proj.pairs_path)}. Inventory materials, then the agent "
-                     "must pair files by reading them.")
+            raise c.NeedsAgent("no-pairs", proj.pairs_path, "there is no pairs.json yet",
+                               "Run inventory.py, pair the files by reading them, write pairs.json.")
         if args.key:
             unknown = sorted(set(args.key) - {p["key"] for p in pairs})
             if unknown:
-                sys.exit(f"Not in pairs.json: {', '.join(unknown)}")
+                raise c.NeedsAgent("no-pairs", proj.pairs_path, f"not in pairs.json: {', '.join(unknown)}",
+                                   "Pair those lectures first, or use the keys pairs.json has.")
             pairs = [p for p in pairs if p["key"] in args.key]
-        status = 0
         for pair in pairs:
-            key = pair["key"]
+            key = pair.get("key")
+            if not key or not pair.get("slides"):
+                c.handoff("bad-json", proj.pairs_path, f"a pair without key or slides: {pair}",
+                          "Every pair needs \"key\" and \"slides\"; fix pairs.json.")
+                continue
             if proj.packed(key) and not args.force:
                 print(f"{key}: already packed, skip")
                 continue
             slides_pdf = proj.path(pair["slides"])
             transcript = proj.path(pair["transcript"]) if pair.get("transcript") else None
-            missing = [proj.rel(p) for p in (slides_pdf, transcript) if p and not p.exists()]
-            if missing:  # report and carry on with the other lectures
-                print(f"{key}: error: file in pairs.json not found: {', '.join(missing)}")
-                status = 1
-                continue
-            extract_one(proj, key, slides_pdf, transcript)
-        return status
+            try:  # one bad lecture must not stop the others
+                extract_one(proj, key, slides_pdf, transcript,
+                            {k: pair.get(k) for k in ("slides_from", "transcript_from")})
+            except c.NeedsAgent as e:
+                c.handoff_from(e)
+        return 0
 
     if not args.slides or not args.key or len(args.key) != 1:
         ap.error("pass --from-pairs, or --slides and one --key (optional --transcript)")
@@ -172,4 +195,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(c.run(main))

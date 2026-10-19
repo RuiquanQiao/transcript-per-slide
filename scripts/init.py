@@ -23,10 +23,13 @@ def main() -> int:
         print(f"wrote {proj.rel(proj.config_path)}")
     for d in proj.slide_dirs + proj.transcript_dirs:
         print(f"  {proj.rel(d)}/: {'ok' if d.exists() else 'missing (fine if unused)'}")
+    if not proj.slide_files() and not proj.transcript_files():
+        print("  no slides or transcripts in these folders: run locate.py to find them, "
+              "then set [paths] in the config")
     print(f"  packs go to {proj.rel(proj.out)}/")
     proj.ensure_study_readme()
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(c.run(main))

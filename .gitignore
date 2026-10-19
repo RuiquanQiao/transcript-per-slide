@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 .venv/
+# Test courses built by tests/ (kept inside the repo, not in the system temp folder).
+.cache/

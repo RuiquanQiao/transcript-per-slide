@@ -159,6 +159,10 @@ def main() -> int:
     proj.out.mkdir(parents=True, exist_ok=True)
 
     if args.from_pairs:
+        # The lectures this run rebuilds take their inputs as they are now: a changed deck or
+        # recording is what a re-extract is for, so it is not handed off as input-changed.
+        proj.refreshing = lambda key: ((not args.key or key in args.key)
+                                       and (args.force or not proj.packed(key)))
         pairs = proj.pairs()
         if not pairs:
             raise c.NeedsAgent("no-pairs", proj.pairs_path, "there is no pairs.json yet",

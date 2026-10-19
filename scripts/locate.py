@@ -38,15 +38,18 @@ SAMPLES = 4
 
 def peek(proj: c.Project, kind: str, path: Path, limit: int = 160) -> str:
     try:
-        if kind == "slides":
-            with c.open_pdf(path) as doc:
-                text = doc[0].get_text("text") if len(doc) else ""
-                text = f"[{len(doc)} pages] {text}"
-        elif kind == "transcripts":
-            text = c.transcript_preview(proj, path, limit * 2)
-        else:
-            return ""
+        with c.quietly():  # a survey: problems with single files are inventory.py's to report
+            if kind == "slides":
+                with c.open_pdf(path) as doc:
+                    text = doc[0].get_text("text") if len(doc) else ""
+                    text = f"[{len(doc)} pages] {text}"
+            elif kind == "transcripts":
+                text = c.transcript_preview(proj, path, limit * 2)
+            else:
+                return ""
     except c.NeedsAgent as e:  # unreadable or locked: say so, keep scanning
+        if e.code == "missing-dependency":
+            raise
         return f"(cannot read: {e.code}, {e.problem})"
     except Exception as e:
         return f"(cannot read: {e.__class__.__name__})"
@@ -59,8 +62,7 @@ def scan(proj: c.Project) -> tuple[dict[Path, dict[str, list[Path]]], bool]:
     for dirpath, dirnames, filenames in os.walk(proj.root):
         here = Path(dirpath)
         dirnames[:] = sorted(d for d in dirnames
-                             if not d.startswith(".") and d not in c.JUNK_DIRS
-                             and not proj.skipped(here / d / "_", proj.root))
+                             if not c.is_junk_dir(here / d) and not proj.skipped(here / d / "_", proj.root))
         for name in sorted(filenames):
             seen += 1
             if seen > MAX_FILES:
@@ -77,7 +79,7 @@ def scan(proj: c.Project) -> tuple[dict[Path, dict[str, list[Path]]], bool]:
             for key, _, suffixes in KINDS:
                 if path.suffix.lower() in suffixes:
                     if key == "transcripts" and path.suffix.lower() == ".json" \
-                            and not c.transcript_units(proj, path):
+                            and not proj.is_transcript_json(path):
                         break  # some other JSON file
                     folders.setdefault(here, {}).setdefault(key, []).append(path)
                     break

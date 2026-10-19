@@ -169,12 +169,19 @@ UTF-8 `.txt` with a blank line between paragraphs.
   `pairs.json`; the next run fingerprints it. If it changed, that is then an
   **input-changed**. If nothing matches, ask the student where the file went.
   Never re-pair a packed lecture from scratch.
-- **input-changed**: a paired file keeps its name but its content is different
-  from when it was paired. For a packed lecture this is raised **once**, then
-  the new fingerprint is recorded, so act on it now. Look at the file:
-  - the same lecture, updated (slides fixed, a re-uploaded recording): tell the
-    student and ask whether to redo the pack (Redo intent: their tutoring notes
-    survive, the lecture notes are rewritten). If they say no, nothing else to do;
+- **input-changed**: a file of a lecture that was already extracted (or
+  packed) keeps its name, but its content differs from what was extracted.
+  It is raised on **every run** until it is settled. Look at the file:
+  - the same lecture, updated (slides fixed, a re-uploaded recording):
+    - not packed yet: re-extract it (`extract.py --from-pairs --key K`), then
+      redo the alignment against the new `extracted.json`;
+    - packed: tell the student and ask whether to redo the pack (Redo intent,
+      `--key K --force`: their tutoring notes survive, the lecture notes are
+      rewritten). The re-extract records the new fingerprint.
+    - If they want to keep the pack as it is, delete that field's entry under
+      `fingerprints` in the pair (e.g. `fingerprints.slides`). The next run
+      records the current file and stops asking. This is the only time you
+      touch fingerprints.
   - a different lecture saved over the old name: fix `pairs.json` (pair it with
     its own lecture, and find the old file again or set this one aside).
 - **hand-edits**: the student (or you) edited `pack.md` outside the tutoring

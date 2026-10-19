@@ -143,7 +143,9 @@ and `transcripts/` are only the defaults. Do this on the first run, and whenever
    peek at the first file. It skips hidden folders, `study/` and the skill.
 2. **Decide by content.** A folder of PDFs whose peeks are title slides
    ("Week 2, Lecture 1 ...") holds slides, whatever it is called; PDFs that read
-   like assignment specs, readings or past exams are not slides. A `.txt` is a
+   like assignment specs, readings or past exams are not slides. Lab or
+   tutorial decks are not searched by default (most have no recording); add
+   their folder only if the student has recordings of them. A `.txt` is a
    transcript only if its peek reads like speech. One folder can be both, and
    the course folder itself is `"."`.
 3. Write the folders into `transcript-per-slide.toml` (`init.py` creates it):
@@ -210,8 +212,10 @@ a redo of a named one.
 
    `pairs.json` is **the record of which deck goes with which recording**;
    nothing else is. The scripts add a `fingerprints` entry (sha256 and size of
-   each file) the first time they read a pair. Do not write or edit
-   fingerprints yourself. They are how renames survive: when the student
+   each file) the first time they read a pair, and renew them when a lecture is
+   re-extracted. Do not write or edit fingerprints yourself (the one exception
+   is settling an `input-changed`, see handoffs.md). They are how renames
+   survive: when the student
    renames or moves a paired file (`lec3.pdf` → `Week 3 - final.pdf`, or into
    another folder), the next script run finds it by content anywhere in the
    course folder, updates `pairs.json`, `extracted.json` and the pack's header,

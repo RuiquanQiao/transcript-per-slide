@@ -15,6 +15,7 @@ no text) is handed to the agent with a NEEDS AGENT block.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from collections import defaultdict
 
@@ -62,25 +63,34 @@ def main() -> int:
     paired = proj.paired_files()
     slide_paths, transcript_paths, others = proj.inputs()
 
+    def settled(path) -> contextlib.AbstractContextManager:
+        # A paired file (or the original of a converted copy) was already dealt with: preview it,
+        # but do not raise its problems again on every run.
+        return c.quietly() if paired.get(proj.rel(path)) else contextlib.nullcontext()
+
     slides = []
     for path in slide_paths:
         entry = {"path": proj.rel(path), "name": path.name, "bytes": path.stat().st_size,
                  "paired_as": paired.get(proj.rel(path))}
-        try:
-            n, preview = pdf_preview(path)
-        except c.NeedsAgent as e:  # one bad deck must not stop the catalog
-            c.handoff_from(e)
-            entry["problem"] = e.code
-            n, preview = 0, ""
-        else:
-            if n and not preview and not entry["paired_as"]:
-                c.handoff("pdf-no-text", path, "no text on its first pages (scanned, or slides exported as images)",
-                          "Pair it by looking at the pages (open the PDF itself). After extract, give each "
-                          "slide a `title` in alignment.json (handoffs.md#pdf-no-text).")
+        with settled(path):
+            try:
+                n, preview = pdf_preview(path)
+            except c.NeedsAgent as e:  # one bad deck must not stop the catalog
+                if e.code == "missing-dependency":
+                    raise
+                c.handoff_from(e)
+                entry["problem"] = e.code
+                n, preview = 0, ""
+            else:
+                if n and not preview:
+                    c.handoff("pdf-no-text", path, "no text on its first pages (scanned, or slides exported "
+                              "as images)", "Pair it by looking at the pages (open the PDF itself). After "
+                              "extract, give each slide a `title` in alignment.json (handoffs.md#pdf-no-text).")
         slides.append({**entry, "pages": n, "preview": preview})
     transcripts = []
     for path in transcript_paths:
-        preview = c.transcript_preview(proj, path)
+        with settled(path):
+            preview = c.transcript_preview(proj, path)
         if not preview and not paired.get(proj.rel(path)):
             c.handoff("transcript-empty", path, "no text could be read from it",
                       "Open it. If it is empty, ask the student to download it again; if the text is "
@@ -93,7 +103,9 @@ def main() -> int:
     for path, kind in unpaired_others:
         groups[OTHER.get(kind, UNRECOGNIZED)].append(path)
     for (code, what, do), paths in groups.items():
-        details = [f"{proj.rel(p)}" + (f"   peek: {pk}" if (pk := text_peek(p)) else "") for p in paths[:12]]
+        with c.quietly():
+            details = [f"{proj.rel(p)}" + (f"   peek: {pk}" if (pk := text_peek(p)) else "")
+                       for p in paths[:12]]
         if len(paths) > 12:
             details.append(f"... and {len(paths) - 12} more")
         c.handoff(code, f"{len(paths)} file(s)", what, do, details=details)

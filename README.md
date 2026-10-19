@@ -117,7 +117,8 @@ Which deck goes with which recording is kept in `study/pairs.json`, along with
 a fingerprint of each file's content. **Rename or move your files whenever you
 like.** The next `/tps` finds them by content and updates the record, and the
 lecture keeps its pack and your notes. If the lecturer replaces a deck or
-recording, `/tps` notices and asks whether to redo that pack.
+recording under the same name, `/tps` notices and asks whether to redo that
+pack, and keeps asking until you decide.
 
 **When the scripts can't cope, the agent takes over.** Real course folders
 are messy: `.pptx` instead of PDF, Teams transcripts as `.docx`, a `.txt`
@@ -132,7 +133,8 @@ read titles off a scanned deck, or ask you for exactly the one thing it
 can't do itself.
 
 Every script also works on its own; run any of them with `--help`. Also there:
-`init.py` (config + a README for the study folder) and `status.py`.
+`init.py` (config + a README for the study folder), `locate.py` (where the
+files are) and `status.py`. Tests: `python -m unittest discover tests`.
 
 ## Configuration
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import codecs
+import contextlib
 import fnmatch
 import hashlib
 import json
@@ -43,8 +44,14 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 EXAMPLE_CONFIG = SKILL_DIR / "assets" / "transcript-per-slide.example.toml"
 STUDY_README = SKILL_DIR / "assets" / "study-README.md"
 TRANSCRIPT_SUFFIXES = {".txt", ".vtt", ".srt", ".json"}
-# Never searched for course files: tool and environment folders (hidden ones are skipped too).
-JUNK_DIRS = {"node_modules", "__pycache__", "venv", "env", "site-packages"}
+# Never searched for course files: tool folders (hidden ones are skipped too). Python
+# environments are recognized by their pyvenv.cfg, not their name: "env/" may be a course.
+JUNK_DIRS = {"node_modules", "__pycache__", "site-packages"}
+
+
+def is_junk_dir(path: Path) -> bool:
+    return (path.name.startswith(".") or path.name in JUNK_DIRS
+            or (path / "pyvenv.cfg").is_file())
 JUNK_FILES = {"desktop.ini", "thumbs.db"}
 DECK_SUFFIXES = {".pptx", ".ppt", ".key", ".odp"}
 WORD_SUFFIXES = {".docx", ".doc", ".rtf", ".odt", ".pages"}
@@ -54,7 +61,7 @@ MEDIA_SUFFIXES = {".mp4", ".m4a", ".mp3", ".mov", ".wav", ".webm", ".mkv", ".aac
 PAIR_FILES = ("slides", "transcript", "slides_from", "transcript_from")
 
 DEFAULTS = {
-    "paths": {"slides": ["slides", "labs"], "transcripts": ["transcripts"], "output": "study",
+    "paths": {"slides": ["slides"], "transcripts": ["transcripts"], "output": "study",
               "ignore": []},
     "slides": {"footer_patterns": [], "zoom": 1.8, "border": True},
     "transcript": {"skip_speakers": [], "asr_fixes": {}, "min_segment_chars": 120,
@@ -86,6 +93,19 @@ class NeedsAgent(Exception):
 _handed: list[tuple[str, str]] = []
 _noted: set[str] = set()
 _root: Path | None = None
+_quiet = 0
+
+
+@contextlib.contextmanager
+def quietly():
+    """Read files without handing off: for previews of files that are already dealt with
+    (paired, or the original of a converted copy) and for locate.py's survey peeks."""
+    global _quiet
+    _quiet += 1
+    try:
+        yield
+    finally:
+        _quiet -= 1
 
 
 def show(p) -> str:
@@ -101,7 +121,7 @@ def show(p) -> str:
 def handoff(code: str, subject, problem: str, do: str, details: list[str] | None = None) -> None:
     """Report something the agent must handle, and let the script carry on with the rest."""
     key = (code, show(subject))
-    if key in _handed:
+    if _quiet or key in _handed:
         return
     _handed.append(key)
     print(f"NEEDS AGENT [{code}] {show(subject)}")
@@ -117,7 +137,7 @@ def handoff_from(e: NeedsAgent) -> None:
 
 def note(msg: str) -> None:
     """Something the script guessed and handled; worth one line, no action needed."""
-    if msg not in _noted:
+    if not _quiet and msg not in _noted:
         _noted.add(msg)
         print(f"note: {msg}")
 
@@ -161,6 +181,10 @@ def sniff(path: Path) -> str:
         return "pdf"
     if head.startswith(b"PK\x03\x04"):
         return "office"  # .pptx/.docx/.key are zip containers (or any zip)
+    if head[4:8] == b"ftyp" or head.startswith((b"ID3", b"RIFF", b"OggS", b"\x1aE\xdf\xa3", b"fLaC")):
+        return "media"  # mp4/m4a/mov, mp3, wav, ogg, mkv/webm, flac
+    if head.startswith((b"\x89PNG", b"\xff\xd8\xff", b"GIF8", b"BM", b"II*\x00", b"MM\x00*")):
+        return "binary"  # images: checked before the UTF-16 test, their headers are full of zeros
     if head.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)) or head[1:200:2].count(0) > 50:
         text = head.decode("utf-16", errors="replace")
     elif b"\x00" in head:
@@ -258,6 +282,9 @@ class Project:
             for wrong, right in cfg["transcript"]["asr_fixes"].items()
         ]
         self.skip_speakers = {str(s) for s in cfg["transcript"]["skip_speakers"]}
+        # Lectures this run is about to (re-)extract: their inputs are accepted as they are now.
+        # extract.py sets it before reading pairs.json.
+        self.refreshing = lambda key: False
 
     def path(self, p: str | Path) -> Path:
         q = Path(p)
@@ -306,16 +333,21 @@ class Project:
                     new = fingerprint(path)
                     if new == old:
                         continue
-                    if old.get("sha256") and new["sha256"] != old["sha256"]:
-                        if self.packed(key):
-                            handoff("input-changed", path,
-                                    f"{key}: this file's content changed since the lecture was packed "
-                                    "(the lecturer updated it, or another file was saved under this name)",
-                                    "Look at it. Same lecture, updated: ask the student whether to redo the "
-                                    "pack (Redo; tutoring notes survive). A different lecture: fix pairs.json "
-                                    "(handoffs.md#input-changed).")
-                        else:
-                            note(f"{key}: {p[field]} changed since it was paired; re-extract before aligning")
+                    content_changed = old.get("sha256") and new["sha256"] != old["sha256"]
+                    built = (self.out / key / "extracted.json").exists()
+                    if content_changed and built and not self.refreshing(key):
+                        # Keep the old fingerprint, so this is raised on every run until it is
+                        # dealt with: a re-extract records the new one, or the agent deletes it.
+                        handoff("input-changed", path,
+                                f"{key}: this file's content changed since the lecture was "
+                                f"{'packed' if self.packed(key) else 'extracted'} (the lecturer updated "
+                                "it, or another file was saved under this name)",
+                                "Look at it (handoffs.md#input-changed). Same lecture, updated: "
+                                + ("ask the student whether to redo the pack (tutoring notes survive)"
+                                   if self.packed(key) else "re-extract it before aligning")
+                                + f". To keep the current pack as it is, delete fingerprints.{field} "
+                                "from this pair in pairs.json. A different lecture: fix pairs.json.")
+                        continue
                     fps[field], changed = new, True
                     continue
                 found = self.find_by_fingerprint(old, in_use) if old.get("sha256") else None
@@ -345,7 +377,7 @@ class Project:
         """Every file in the course folder that could be an input (same skips as locate.py)."""
         for dirpath, dirnames, filenames in os.walk(self.root):
             here = Path(dirpath)
-            dirnames[:] = [d for d in dirnames if not d.startswith(".") and d not in JUNK_DIRS
+            dirnames[:] = [d for d in dirnames if not is_junk_dir(here / d)
                            and not self.skipped(here / d / "_", self.root)]
             for name in filenames:
                 if not name.startswith("."):
@@ -410,8 +442,11 @@ class Project:
         # The skill's demo files, unless the course *is* inside the skill (examples/demo).
         if path.is_relative_to(SKILL_DIR) and not self.root.is_relative_to(SKILL_DIR):
             return True
-        parts = path.relative_to(base.resolve()).parts[:-1] if path.is_relative_to(base.resolve()) else ()
-        return any(p.startswith(".") or p in JUNK_DIRS for p in parts)
+        base = base.resolve()
+        if not path.is_relative_to(base):
+            return False
+        parents = path.relative_to(base).parents  # every folder between base and the file
+        return any(is_junk_dir(base / p) for p in list(parents)[:-1])
 
     def ignored(self, path: Path) -> bool:
         """Files the agent marked as not lecture material: [paths] ignore, globs from the course folder."""
@@ -432,6 +467,7 @@ class Project:
                     continue
                 for p in sorted(d.rglob("*")):
                     if (p.is_file() and not p.name.startswith(".") and p.name.lower() not in JUNK_FILES
+                            and p.resolve() != self.config_path.resolve()
                             and not self.skipped(p, d) and not self.ignored(p)):
                         roles.setdefault(p, set()).add(role)
         slides, transcripts, other = [], [], []
@@ -450,12 +486,12 @@ class Project:
                 other.append((p, "deck"))
             elif suffix in WORD_SUFFIXES or kind == "office":
                 other.append((p, "word"))
-            elif suffix in MEDIA_SUFFIXES:
+            elif suffix in MEDIA_SUFFIXES or kind == "media":
                 other.append((p, "media"))
             elif suffix in TRANSCRIPT_SUFFIXES or kind in {"captions", "json"}:
                 if "transcripts" not in r:
                     other.append((p, "text"))
-                elif (suffix == ".json" or kind == "json") and not transcript_units(self, p):
+                elif (suffix == ".json" or kind == "json") and not self.is_transcript_json(p):
                     other.append((p, "json"))
                 else:
                     transcripts.append(p)
@@ -463,6 +499,15 @@ class Project:
                 other.append((p, kind or "unknown"))
         self._inputs = (sorted(slides), sorted(transcripts), sorted(other))
         return self._inputs
+
+    def is_transcript_json(self, p: Path) -> bool:
+        """A JSON file in a transcript format we read (not package.json, not a TOML/INI file that
+        merely starts with '[')."""
+        with quietly():  # classifying, not reading: problems are reported when it is previewed
+            try:
+                return bool(_json_units(read_text_any(p)))
+            except OSError:
+                return False
 
     def slide_files(self) -> list[Path]:
         return self.inputs()[0]
@@ -495,8 +540,12 @@ def _as_list(v) -> list:
 
 
 def write_json(path: Path, data) -> None:
+    """Write atomically: pairs.json is the only record of which files belong together, and a
+    crash or Ctrl-C half-way through a plain write would leave it truncated."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+    tmp = path.with_name(f".{path.name}.tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+    os.replace(tmp, path)
 
 
 def fingerprint(path: Path) -> dict:
